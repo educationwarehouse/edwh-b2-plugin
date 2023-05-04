@@ -23,7 +23,7 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dependencies = ['invoke']
+dependencies = ['invoke', 'humanize', 'tabulate', 'b2']
 
 [project.optional-dependencies]
 dev = [
