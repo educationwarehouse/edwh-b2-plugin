@@ -1,14 +1,12 @@
+import datetime
 import json
 import re
-import datetime
-
 from dataclasses import dataclass, field, InitVar, asdict
-from invoke import task, run, Result, Context
-import humanize
-import tabulate
 
 import edwh
-import edwh.tasks
+import humanize
+import tabulate
+from invoke import task, Context
 
 
 @dataclass
@@ -40,9 +38,9 @@ class Bucket:
 def authenticate(c):
     try:
         # ensure bucketname is present, but don't use it right now.
-        edwh.tasks.get_env_value("B2_ATTACHMENTS_BUCKETNAME")
-        b2_keyid = edwh.tasks.get_env_value("B2_ATTACHMENTS_KEYID")
-        b2_key = edwh.tasks.get_env_value("B2_ATTACHMENTS_KEY")
+        edwh.get_env_value("B2_ATTACHMENTS_BUCKETNAME")
+        b2_keyid = edwh.get_env_value("B2_ATTACHMENTS_KEYID")
+        b2_key = edwh.get_env_value("B2_ATTACHMENTS_KEY")
     except FileNotFoundError:
         print("Please run this command in an `omgeving` with a docker-compose.yml!")
         exit(1)
@@ -79,7 +77,7 @@ def list_buckets(ctx, quick=False, bucket=None, purge=None, purge_filter=r".*\.(
     buckets = []
     for idx, bucket in enumerate(buckets_js):
         print(f"loading bucket {idx}/{len(buckets_js)}")
-        buckets.append(bucket := Bucket(bucket, ctx, quick))
+        buckets.append(Bucket(bucket, ctx, quick))
 
     print(tabulate.tabulate([asdict(b) for b in buckets], headers="keys"))
 
@@ -115,7 +113,7 @@ def _purge_bucket(
         f'> Removing {humanize.naturalsize(sum(f["size"] for f in to_remove_files))} '
         f"in {len(to_remove_files)} of {len(file_list)} files."
     )
-    if not edwh.tasks.confirm(f"Removing {len(to_remove_files)} files, are you sure?"):
+    if not edwh.confirm(f"Removing {len(to_remove_files)} files, are you sure?"):
         # stop
         return
 
