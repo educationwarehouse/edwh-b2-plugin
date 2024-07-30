@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.2.1 (2024-07-30)
+
+### Fix
+
+* Perform purge async for better performance ([`8c9682e`](https://github.com/educationwarehouse/edwh-b2-plugin/commit/8c9682eb2a7e67a76ec3e7db921bdd9733b67ccc))
+
 ## v0.2.0 (2024-07-30)
 
 ### Feature
