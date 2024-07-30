@@ -1,12 +1,15 @@
 import datetime
 import json
 import re
-from dataclasses import dataclass, field, InitVar, asdict
+import sys
+from dataclasses import InitVar, asdict, dataclass, field
+from typing import Optional
 
 import edwh
 import humanize
 import tabulate
-from invoke import task, Context
+from invoke import Context, task
+from typing_extensions import Self
 
 
 @dataclass
@@ -22,16 +25,26 @@ class Bucket:
 
     def __post_init__(self, js: dict, ctx: Context, quick: bool = False):
         self.name = js["bucketName"]
-        bucket_info = json.loads(
-            ctx.run(
-                f'b2 get-bucket {"" if quick else "--showSize"} {self.name}',
-                hide=True,
-            ).stdout
-        )
+        self._ctx = ctx
+        bucket_info = self._get_bucket(ctx, self.name, quick)
         self.visibility = bucket_info["bucketType"]
         self.size = bucket_info.get("totalSize", -1)
         self.file_count = bucket_info.get("fileCount", -1)
         self.hsize = humanize.naturalsize(self.size)
+
+    @classmethod
+    def _get_bucket(cls, ctx, name: str, quick: bool):
+        return json.loads(
+            ctx.run(
+                f'b2 get-bucket {"" if quick else "--showSize"} {name}',
+                hide=True,
+            ).stdout
+        )
+
+    @classmethod
+    def find(cls, ctx: Context, name: str, quick: bool = False) -> Self:
+        info = cls._get_bucket(ctx, name, quick)
+        return Bucket(info, ctx, quick)
 
 
 @task
@@ -41,11 +54,16 @@ def authenticate(c):
         edwh.get_env_value("B2_ATTACHMENTS_BUCKETNAME")
         b2_keyid = edwh.get_env_value("B2_ATTACHMENTS_KEYID")
         b2_key = edwh.get_env_value("B2_ATTACHMENTS_KEY")
-    except FileNotFoundError:
-        print("Please run this command in an `omgeving` with a docker-compose.yml!")
+    except (FileNotFoundError, KeyError):
+        print("Please run this command in an `omgeving` with a docker-compose.yml and B2_ settings!")
         exit(1)
 
-    c.run(f"b2 authorize-account {b2_keyid} {b2_key}")
+    result = c.run(f"b2 account authorize {b2_keyid} {b2_key}", hide=True)
+    if result.ok:
+        print("done!")
+    else:
+        print(result.stdout)
+        print(result.stderr, file=sys.stderr)
 
 
 @task(
@@ -59,10 +77,10 @@ def authenticate(c):
     ),
 )
 def list_buckets(ctx, quick=False, bucket=None, purge=None, purge_filter=r".*\.(tgz|log|gz)"):
-    print("loading bucket overview")
-    all_buckets = {b["bucketName"]: b for b in json.loads(ctx.run("b2 list-buckets --json", hide=True).stdout)}
+    all_buckets = {b["bucketName"]: b for b in json.loads(ctx.run("b2 bucket list --json", hide=True).stdout)}
 
-    print("filtering buckets")
+    print(ctx.run("b2 bucket list --json"))
+
     buckets_js = []
     if not bucket:
         buckets_js.extend(all_buckets.values())
@@ -82,30 +100,29 @@ def list_buckets(ctx, quick=False, bucket=None, purge=None, purge_filter=r".*\.(
     print(tabulate.tabulate([asdict(b) for b in buckets], headers="keys"))
 
     if not purge:
-        exit()
+        return
 
     max_delta = datetime.timedelta(int(purge) if purge.isdigit() else 100)
     for idx, bucket in enumerate(buckets):
-        _purge_bucket(ctx, bucket, buckets, idx, max_delta, purge_filter)
+        print(f"Processing {idx}/{len(buckets)} buckets, name: {bucket.name}")
+        _purge_bucket(ctx, bucket, max_delta, purge_filter)
 
 
 def _purge_bucket(
     ctx: Context,
     bucket: Bucket,
-    buckets: list[Bucket],
-    idx: int,
-    max_delta: datetime.timedelta,
+    max_delta: Optional[datetime.timedelta],
     purge_filter: str,
 ):
-    print(f"Processing {idx}/{len(buckets)} buckets, name: {bucket.name}")
-    file_list = json.loads(ctx.run(f"b2 ls --json {bucket.name} --recursive", hide=True).stdout)
+    name = bucket.name if bucket.name.startswith("b2://") else f"b2://{bucket.name}"
+    file_list = json.loads(ctx.run(f"b2 ls --json {name} --recursive", hide=True).stdout)
 
     print(f"> Processing {len(file_list)} files.")
     now = datetime.datetime.now()
     to_remove_files = [
         file
         for file in file_list
-        if (now - datetime.datetime.fromtimestamp(file["uploadTimestamp"] / 1000)) > max_delta
+        if (max_delta is None or (now - datetime.datetime.fromtimestamp(file["uploadTimestamp"] / 1000)) > max_delta)
         and re.match(purge_filter, file["fileName"])
     ]
 
@@ -113,7 +130,7 @@ def _purge_bucket(
         f'> Removing {humanize.naturalsize(sum(f["size"] for f in to_remove_files))} '
         f"in {len(to_remove_files)} of {len(file_list)} files."
     )
-    if not edwh.confirm(f"Removing {len(to_remove_files)} files, are you sure?"):
+    if not edwh.confirm(f"Removing {len(to_remove_files)} files, are you sure? [yN] "):
         # stop
         return
 
@@ -123,3 +140,10 @@ def _purge_bucket(
             f'b2 delete-file-version "{file["fileName"]}" "{file["fileId"]}"',
             hide=True,
         )
+
+
+@task()
+def purge(ctx, bucket_name: str):
+    bucket = Bucket.find(ctx, bucket_name, quick=True)
+
+    _purge_bucket(ctx, bucket, None, ".+")
