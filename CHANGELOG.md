@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.2.2 (2024-07-30)
+
+### Fix
+
+* Add `animate` functionality to `join_all` ([`aeffe89`](https://github.com/educationwarehouse/edwh-b2-plugin/commit/aeffe8923b1d5bf0d6968b024da41cd76ce30cc0))
+
 ## v0.2.1 (2024-07-30)
 
 ### Fix
