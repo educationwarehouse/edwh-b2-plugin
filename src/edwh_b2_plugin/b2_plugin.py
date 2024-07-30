@@ -1,7 +1,10 @@
 import datetime
+import itertools
 import json
 import re
 import sys
+import time
+import typing
 from dataclasses import InitVar, asdict, dataclass, field
 from typing import Optional, cast
 
@@ -108,8 +111,19 @@ def list_buckets(ctx, quick=False, bucket=None, purge=None, purge_filter=r".*\.(
         _purge_bucket(ctx, bucket, max_delta, purge_filter)
 
 
-def join_all(promises: list[Promise]) -> bool:
-    return all(_.join().ok for _ in promises)
+def is_done(promise: Promise) -> bool:
+    return promise.runner.process_is_finished
+
+
+def join_all(promises: list[Promise], animate: Optional[typing.Sequence[str]] = None) -> bool:
+    for idx in itertools.count():
+        if all(is_done(_) for _ in promises):
+            print(" " * 10, end="\r", file=sys.stderr)
+            return all(_.join().ok for _ in promises)
+        if animate:
+            char = animate[idx % len(animate)] + " " * 10
+            print(char, end='\r', flush=True, file=sys.stderr)
+            time.sleep(0.5)
 
 
 def _purge_bucket(
@@ -151,9 +165,7 @@ def _purge_bucket(
         )
         promises.append(promise)
 
-    print("...")
-
-    if not join_all(promises):
+    if not join_all(promises, animate=('.', '..', '...')):
         print("Not all files could be deleted!")
     else:
         print("Done!")
