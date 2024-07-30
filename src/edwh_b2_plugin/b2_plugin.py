@@ -3,12 +3,12 @@ import json
 import re
 import sys
 from dataclasses import InitVar, asdict, dataclass, field
-from typing import Optional
+from typing import Optional, cast
 
 import edwh
 import humanize
 import tabulate
-from invoke import Context, task
+from invoke import Context, Promise, task
 from typing_extensions import Self
 
 
@@ -108,6 +108,10 @@ def list_buckets(ctx, quick=False, bucket=None, purge=None, purge_filter=r".*\.(
         _purge_bucket(ctx, bucket, max_delta, purge_filter)
 
 
+def join_all(promises: list[Promise]) -> bool:
+    return all(_.join().ok for _ in promises)
+
+
 def _purge_bucket(
     ctx: Context,
     bucket: Bucket,
@@ -134,12 +138,25 @@ def _purge_bucket(
         # stop
         return
 
-    for idx, file in enumerate(to_remove_files):
-        print(f'removing {idx}/{len(to_remove_files)}: {file["fileName"]}')
-        ctx.run(
-            f'b2 delete-file-version "{file["fileName"]}" "{file["fileId"]}"',
-            hide=True,
+    promises = []
+    for idx, file in enumerate(to_remove_files, 1):
+        print(f'Queueing {idx}/{len(to_remove_files)}: {file["fileName"]}')
+        promise = cast(
+            Promise,
+            ctx.run(
+                f'b2 delete-file-version "{file["fileName"]}" "{file["fileId"]}"',
+                hide=True,
+                asynchronous=True,
+            ),
         )
+        promises.append(promise)
+
+    print("...")
+
+    if not join_all(promises):
+        print("Not all files could be deleted!")
+    else:
+        print("Done!")
 
 
 @task()
