@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.2.0 (2024-07-30)
+
+### Feature
+
+* Add `b2.purge <bucket>`  subcommand ([`9f84629`](https://github.com/educationwarehouse/edwh-b2-plugin/commit/9f84629fc5d60fe790edba4da3645a09d03d7d2f))
+
 ## v0.1.1 (2023-05-08)
 ### Documentation
 * **project:** Changed github URL ([`99db7cc`](https://github.com/educationwarehouse/edwh-b2-plugin/commit/99db7ccea9acdae03546789f799e204fba14285f))
