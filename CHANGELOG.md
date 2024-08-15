@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.2.3 (2024-08-15)
+
+### Fix
+
+* B2 bucket list syntax changed ([`0b01298`](https://github.com/educationwarehouse/edwh-b2-plugin/commit/0b01298893dcd24c4c5e9db22f373fa2273c4825))
+
 ## v0.2.2 (2024-07-30)
 
 ### Fix
