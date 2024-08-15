@@ -39,7 +39,7 @@ class Bucket:
     def _get_bucket(cls, ctx, name: str, quick: bool):
         return json.loads(
             ctx.run(
-                f'b2 get-bucket {"" if quick else "--showSize"} {name}',
+                f'b2 bucket get {"" if quick else "--show-size"} {name}',
                 hide=True,
             ).stdout
         )
@@ -81,9 +81,6 @@ def authenticate(c):
 )
 def list_buckets(ctx, quick=False, bucket=None, purge=None, purge_filter=r".*\.(tgz|log|gz)"):
     all_buckets = {b["bucketName"]: b for b in json.loads(ctx.run("b2 bucket list --json", hide=True).stdout)}
-
-    print(ctx.run("b2 bucket list --json"))
-
     buckets_js = []
     if not bucket:
         buckets_js.extend(all_buckets.values())
