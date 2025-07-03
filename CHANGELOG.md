@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.2.4 (2025-07-03)
+
+### Fix
+
+* Use edwh.task instead of invoke.task + modern `ew fmt` ([`e4064ba`](https://github.com/educationwarehouse/edwh-b2-plugin/commit/e4064bad8678a5236054000a55a8fdc9f1998932))
+
 ## v0.2.3 (2024-08-15)
 
 ### Fix
