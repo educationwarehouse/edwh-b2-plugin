@@ -11,7 +11,8 @@ from typing import Optional, cast
 import edwh
 import humanize
 import tabulate
-from invoke import Context, Promise, task
+from edwh import task
+from invoke import Context, Promise
 from typing_extensions import Self
 
 
@@ -39,7 +40,7 @@ class Bucket:
     def _get_bucket(cls, ctx, name: str, quick: bool):
         return json.loads(
             ctx.run(
-                f'b2 bucket get {"" if quick else "--show-size"} {name}',
+                f"b2 bucket get {'' if quick else '--show-size'} {name}",
                 hide=True,
             ).stdout
         )
@@ -119,7 +120,7 @@ def join_all(promises: list[Promise], animate: Optional[typing.Sequence[str]] = 
             return all(_.join().ok for _ in promises)
         if animate:
             char = animate[idx % len(animate)] + " " * 10
-            print(char, end='\r', flush=True, file=sys.stderr)
+            print(char, end="\r", flush=True, file=sys.stderr)
             time.sleep(0.5)
 
 
@@ -142,7 +143,7 @@ def _purge_bucket(
     ]
 
     print(
-        f'> Removing {humanize.naturalsize(sum(f["size"] for f in to_remove_files))} '
+        f"> Removing {humanize.naturalsize(sum(f['size'] for f in to_remove_files))} "
         f"in {len(to_remove_files)} of {len(file_list)} files."
     )
     if not edwh.confirm(f"Removing {len(to_remove_files)} files, are you sure? [yN] "):
@@ -151,7 +152,7 @@ def _purge_bucket(
 
     promises = []
     for idx, file in enumerate(to_remove_files, 1):
-        print(f'Queueing {idx}/{len(to_remove_files)}: {file["fileName"]}')
+        print(f"Queueing {idx}/{len(to_remove_files)}: {file['fileName']}")
         promise = cast(
             Promise,
             ctx.run(
@@ -162,7 +163,7 @@ def _purge_bucket(
         )
         promises.append(promise)
 
-    if not join_all(promises, animate=('.', '..', '...')):
+    if not join_all(promises, animate=(".", "..", "...")):
         print("Not all files could be deleted!")
     else:
         print("Done!")
