@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.2.5 (2026-03-12)
+
+### Fix
+
+* Roughly pin b2 version ([`5606efb`](https://github.com/educationwarehouse/edwh-b2-plugin/commit/5606efbcdce791296eed5d3df5ae927b87bb8183))
+
 ## v0.2.4 (2025-07-03)
 
 ### Fix
