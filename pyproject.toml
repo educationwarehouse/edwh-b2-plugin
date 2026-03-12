@@ -26,7 +26,7 @@ classifiers = [
 dependencies = [
     "humanize",
     "tabulate",
-    "b2",
+    "b2 >=4, <5",
 ]
 
 [project.optional-dependencies]
