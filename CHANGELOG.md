@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.2.7 (2026-07-10)
+
+### Fix
+
+* **install:** Constrain tabulate for b2 4 compatibility ([`fe3920f`](https://github.com/educationwarehouse/edwh-b2-plugin/commit/fe3920f5c1dd0eb1264f8cb7311fa7cd5f1fa444))
+
 ## v0.2.6 (2026-07-10)
 
 ### Fix
