@@ -5,3 +5,4 @@ dist/
 build/
 config.toml
 .env
+uv.lock
